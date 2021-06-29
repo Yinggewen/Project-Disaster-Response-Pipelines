@@ -1,24 +1,140 @@
 import sys
+import nltk
+nltk.download('punkt')
+nltk.download('wordnet')
+nltk.download('averaged_perceptron_tagger')
+
+import numpy as np
+import pandas as pd
+pd.set_option('display.max_columns', 500)
+
+import sys
+import os
+import re
+from sqlalchemy import create_engine
+import pickle
+
+from scipy.stats import gmean
+# import relevant functions/modules from the sklearn
+from sklearn.pipeline import Pipeline, FeatureUnion
+from sklearn.model_selection import train_test_split
+from sklearn.metrics import classification_report
+from sklearn.metrics import confusion_matrix
+from sklearn.metrics import fbeta_score, make_scorer
+from sklearn.ensemble import GradientBoostingClassifier, RandomForestClassifier, AdaBoostClassifier
+from sklearn.model_selection import GridSearchCV
+from sklearn.feature_extraction.text import TfidfTransformer, CountVectorizer
+from sklearn.multioutput import MultiOutputClassifier
+from sklearn.base import BaseEstimator,TransformerMixin
+
 
 
 def load_data(database_filepath):
-    pass
+    engine = create_engine('sqlite:///' + database_filepath)
+    #table_name = os.path.basename(database_filepath).replace(".db","") + "_table"
+    table_name = "data/DisasterResponse"
+    df = pd.read_sql_table(table_name,engine)
+    
+    
+    df = df.drop(['child_alone'], axis=1)
+    df['related']=df['related'].map(lambda x: 1 if x == 2 else x)
+    
+    X=df['message']
+    y=df.iloc[:, 4:]
+    
+    category_names = y.columns
+    return X, y, category_names
 
 
-def tokenize(text):
-    pass
+def tokenize(text, url_place_holder_string="urlplaceholder"):
+    # Replace all urls with a urlplaceholder string
+    url_regex = 'http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\(\),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+'
+    
+    # Extract all the urls from the provided text 
+    detected_urls = re.findall(url_regex, text)
+    
+    # Replace url with a url placeholder string
+    for detected_url in detected_urls:
+        text = text.replace(detected_url, url_place_holder_string)
+
+    # Extract the word tokens from the provided text
+    tokens = nltk.word_tokenize(text)
+    
+    #Lemmanitizer to remove inflectional and derivationally related forms of a word
+    lemmatizer = nltk.WordNetLemmatizer()
+
+    # List of clean tokens
+    clean_tokens = [lemmatizer.lemmatize(w).lower().strip() for w in tokens]
+    
+    return clean_tokens
+
+class StartingVerbExtractor(BaseEstimator, TransformerMixin):
+
+    def starting_verb(self, text):
+        sentence_list = nltk.sent_tokenize(text)
+        for sentence in sentence_list:
+            pos_tags = nltk.pos_tag(tokenize(sentence))
+            first_word, first_tag = pos_tags[0]
+            if first_tag in ['VB', 'VBP'] or first_word == 'RT':
+                return True
+        return False
+
+    def fit(self, x, y=None):
+        return self
+
+    def transform(self, X):
+        X_tagged = pd.Series(X).apply(self.starting_verb)
+        return pd.DataFrame(X_tagged)
 
 
 def build_model():
-    pass
+    pipeline = Pipeline([
+        ('features', FeatureUnion([
+
+            ('text_pipeline', Pipeline([
+                ('count_vectorizer', CountVectorizer(tokenizer=tokenize)),
+                ('tfidf_transformer', TfidfTransformer())
+            ])),
+
+            ('starting_verb_transformer', StartingVerbExtractor())
+        ])),
+
+        ('classifier', MultiOutputClassifier(AdaBoostClassifier()))
+    ])
+
+    return pipeline
 
 
 def evaluate_model(model, X_test, Y_test, category_names):
-    pass
+    """
+    Evaluate Model function
+    
+    This function applies a ML pipeline to a test set and prints out the model performance (accuracy and f1score)
+    
+    Arguments:
+        pipeline -> A valid scikit ML Pipeline
+        X_test -> Test features
+        Y_test -> Test labels
+        category_names -> label names (multi-output)
+    """
+    Y_pred = model.predict(X_test)
+    
+    # multi_f1 = multioutput_fscore(Y_test,Y_pred, beta = 1)
+    overall_accuracy = (Y_pred == Y_test).mean().mean()
+
+    print('Average overall accuracy {0:.2f}%'.format(overall_accuracy*100))
+    #print('F1 score (custom definition) {0:.2f}%'.format(multi_f1*100))
+
+    # Print the whole classification report.
+    Y_pred = pd.DataFrame(Y_pred, columns = Y_test.columns)
+    
+    for column in Y_test.columns:
+        print('Model Performance with Category: {}'.format(column))
+        print(classification_report(Y_test[column],Y_pred[column]))
 
 
 def save_model(model, model_filepath):
-    pass
+    pickle.dump(model, open(model_filepath, 'wb'))
 
 
 def main():
