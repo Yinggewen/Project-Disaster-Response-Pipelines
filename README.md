@@ -23,20 +23,21 @@ The first part of my data pipeline is the Extract, Transform, and Load process. 
 In the last step, display results in a Flask web app. 
 Here's the file structure of the project:
 
-- app
-| - template
-| |- master.html  # main page of web app
-| |- go.html  # classification result page of web app
-|- run.py  # Flask file that runs app
+|-app
 
-- data
-|- disaster_categories.csv  # data to process 
-|- disaster_messages.csv  # data to process
-|- process_data.py
-|- InsertDatabaseName.db   # database to save clean data to
+  | - template
+  | |- master.html  # main page of web app
+  | |- go.html  # classification result page of web app
+  |- run.py  # Flask file that runs app
 
-- models
-|- train_classifier.py
-|- classifier.pkl  # saved model 
+|-data
+  |- disaster_categories.csv  # data to process 
+  |- disaster_messages.csv  # data to process
+  |- process_data.py
+  |- DisasterResponse.db   # database to save clean data to
+
+|-models
+  |- train_classifier.py
+  |- classifier.pkl  # saved model 
 
 - README.md
