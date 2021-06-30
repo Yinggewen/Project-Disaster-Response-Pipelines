@@ -17,92 +17,124 @@ import pickle
 from scipy.stats import gmean
 # import relevant functions/modules from the sklearn
 from sklearn.pipeline import Pipeline, FeatureUnion
+from nltk.tokenize import word_tokenize, WhitespaceTokenizer
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import classification_report
 from sklearn.metrics import confusion_matrix
 from sklearn.metrics import fbeta_score, make_scorer
 from sklearn.ensemble import GradientBoostingClassifier, RandomForestClassifier, AdaBoostClassifier
 from sklearn.model_selection import GridSearchCV
+from sklearn.multiclass import OneVsRestClassifier
 from sklearn.feature_extraction.text import TfidfTransformer, CountVectorizer
 from sklearn.multioutput import MultiOutputClassifier
 from sklearn.base import BaseEstimator,TransformerMixin
+from sklearn.svm import LinearSVC
+from nltk.stem import WordNetLemmatizer
 
 
-
+"""
 def load_data(database_filepath):
+    
+   
+    Load Data from the Database Function
+    
+    Arguments:
+        database_filepath -> Path to SQLite destination database (e.g. disaster_response_db.db)
+    Output:
+        X -> a dataframe containing features
+        Y -> a dataframe containing labels
+        category_names -> List of categories name
+
     engine = create_engine('sqlite:///' + database_filepath)
     #table_name = os.path.basename(database_filepath).replace(".db","") + "_table"
-    table_name = "data/DisasterResponse"
-    df = pd.read_sql_table(table_name,engine)
-    
-    
-    df = df.drop(['child_alone'], axis=1)
-    df['related']=df['related'].map(lambda x: 1 if x == 2 else x)
-    
+    df = pd.read_sql_table(DisasterResponse,engine)
+   
     X=df['message']
     y=df.iloc[:, 4:]
-    
     category_names = y.columns
+    df=df[~(df.isnull().any(axis=1))|((df.original.isnull())&~(df.offer.isnull()))]
+    return X, y, category_names
+"""
+
+def load_data(database_filepath):
+    """ Load data from database,
+    Define feature and target variables X and y,
+    Define categories list.
+    
+    Args:
+        database_filepath (str): the database file path. 
+        
+    Returns: 
+        df (dataframe): clean dataframe.
+        X (dataframe): feature variable.
+        y (dataframe): target variable.
+        category_names (list): list of message categories.
+    
+    """
+        
+    engine = create_engine('sqlite:///' + database_filepath)
+    df = pd.read_sql_table('DisasterResponse',engine) 
+    X = df['message']
+    y = df.iloc[:,4:]
+    category_names=y.columns 
+    df=df[~(df.isnull().any(axis=1))|((df.original.isnull())&~(df.offer.isnull()))]
+    
     return X, y, category_names
 
 
-def tokenize(text, url_place_holder_string="urlplaceholder"):
-    # Replace all urls with a urlplaceholder string
-    url_regex = 'http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\(\),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+'
+def tokenize(text):
+    """using nltk to case normalize, lemmatize, and tokenize text. 
+    This function is used in the machine learning pipeline to, 
+    vectorize and then apply TF-IDF to the text.
     
-    # Extract all the urls from the provided text 
-    detected_urls = re.findall(url_regex, text)
+     Args:
+        text (str): A disaster message. 
+        
+    Returns: 
+        processed_tokens (list): list of cleaned tokens in the message.
+        
+    """
+    # get tokens from text
+    tokens= WhitespaceTokenizer().tokenize(text)
+    lemmatizer= WordNetLemmatizer()
     
-    # Replace url with a url placeholder string
-    for detected_url in detected_urls:
-        text = text.replace(detected_url, url_place_holder_string)
+    # clean tokens
+    processed_tokens=[]
+    for token in tokens:
+        token=lemmatizer.lemmatize(token).lower().strip('!"#$%&\'()*+,-./:;<=>?@[\\]^_`{|}~')
+        token=re.sub(r'\[[^.,;:]]*\]','', token)
+        
+        # add token to compiled list if not empty
+        if token !='':
+            processed_tokens.append(token)
+    return processed_tokens
 
-    # Extract the word tokens from the provided text
-    tokens = nltk.word_tokenize(text)
-    
-    #Lemmanitizer to remove inflectional and derivationally related forms of a word
-    lemmatizer = nltk.WordNetLemmatizer()
 
-    # List of clean tokens
-    clean_tokens = [lemmatizer.lemmatize(w).lower().strip() for w in tokens]
-    
-    return clean_tokens
 
-class StartingVerbExtractor(BaseEstimator, TransformerMixin):
-
-    def starting_verb(self, text):
-        sentence_list = nltk.sent_tokenize(text)
-        for sentence in sentence_list:
-            pos_tags = nltk.pos_tag(tokenize(sentence))
-            first_word, first_tag = pos_tags[0]
-            if first_tag in ['VB', 'VBP'] or first_word == 'RT':
-                return True
-        return False
-
-    def fit(self, x, y=None):
-        return self
-
-    def transform(self, X):
-        X_tagged = pd.Series(X).apply(self.starting_verb)
-        return pd.DataFrame(X_tagged)
 
 
 def build_model():
+    """
+    Build Pipeline function
+    
+    Output:
+        A Scikit ML Pipeline that process text messages and apply a classifier.
+        
+    """
     pipeline = Pipeline([
-        ('features', FeatureUnion([
-
-            ('text_pipeline', Pipeline([
-                ('count_vectorizer', CountVectorizer(tokenizer=tokenize)),
-                ('tfidf_transformer', TfidfTransformer())
-            ])),
-
-            ('starting_verb_transformer', StartingVerbExtractor())
-        ])),
-
-        ('classifier', MultiOutputClassifier(AdaBoostClassifier()))
+    ('vect', CountVectorizer(tokenizer = tokenize)),
+    ('tfidf', TfidfTransformer()),
+    ('clf', MultiOutputClassifier(OneVsRestClassifier(LinearSVC())))
     ])
+    
+    
+    parameters = {
+    'tfidf__smooth_idf':[True, False],
+    'clf__estimator__estimator__C':[1,2,5]}
+    
+    cv = GridSearchCV(pipeline, parameters)
 
-    return pipeline
+    return cv
 
 
 def evaluate_model(model, X_test, Y_test, category_names):
