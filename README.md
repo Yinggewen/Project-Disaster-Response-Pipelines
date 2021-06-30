@@ -18,26 +18,37 @@ The first part of my data pipeline is the Extract, Transform, and Load process. 
 
 * Finally, export model to a pickle file. 
 
-## Flask App
+## The file structure of the project
 
 In the last step, display results in a Flask web app. 
 Here's the file structure of the project:
 
-|-app
+|--app <br>
+|　　|-- template  <br>
+|　　|-- |-- master.html  # main page of web app <br>
+|　　|-- |-- go.html  # classification result page of web app <br>
+|　　|-- run.py  # Flask file that runs app <br>
+|　　| <br>
+|--data <br>
+|　　|-- disaster_categories.csv  # data to process <br>
+|　　|-- disaster_messages.csv  # data to process <br>
+|　　|-- process_data.py <br>
+|　　|-- DisasterResponse.db   # database to save clean data to <br>
+|　　|<br>
+|--models <br>
+|　　|-- train_classifier.py <br>
+|　　|-- classifier.pkl  # saved model <br>
+|　　|<br>
+|--README.md <br>
 
-  | - template
-  | |- master.html  # main page of web app
-  | |- go.html  # classification result page of web app
-  |- run.py  # Flask file that runs app
 
-|-data
-  |- disaster_categories.csv  # data to process 
-  |- disaster_messages.csv  # data to process
-  |- process_data.py
-  |- DisasterResponse.db   # database to save clean data to
+## Running the Web App from the Project Workspace IDE
 
-|-models
-  |- train_classifier.py
-  |- classifier.pkl  # saved model 
+When working in the Project Workspace IDE, here is how to see your Flask app.
+Open a new terminal window. You should already be in the workspace folder, but if not, then use terminal commands to navigate inside the folder with the run.py file.
+Type in the command line:
+python 
+```
+run.py
+```
 
-- README.md
