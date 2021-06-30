@@ -48,10 +48,10 @@ Here's the file structure of the project:
 ## Running the Web App from the Project Workspace IDE
 
 When working in the Project Workspace IDE, here is how to see your Flask app.
-Open a new terminal window. You should already be in the workspace folder, but if not, then use terminal commands to navigate inside the folder with the run.py file.
+1. Open a new terminal window. You should already be in the workspace folder, but if not, then use terminal commands to navigate inside the folder with the run.py file.
 Type in the command line:
 python 
 ```
 run.py
 ```
-
+2. Go to http://0.0.0.0:3001/
