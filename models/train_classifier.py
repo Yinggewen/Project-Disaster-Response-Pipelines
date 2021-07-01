@@ -165,8 +165,21 @@ def evaluate_model(model, X_test, Y_test, category_names):
         print(classification_report(Y_test[column],Y_pred[column]))
 
 
+        
 def save_model(model, model_filepath):
+    """
+    Save Pipeline function
+    
+    This function saves trained model as Pickle file, to be loaded later.
+    
+    Arguments:
+        pipeline -> GridSearchCV or Scikit Pipelin object
+        pickle_filepath -> destination path to save .pkl file
+    
+    """
     pickle.dump(model, open(model_filepath, 'wb'))
+        
+        
 
 
 def main():
