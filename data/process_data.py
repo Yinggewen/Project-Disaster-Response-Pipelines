@@ -6,22 +6,18 @@ from sqlalchemy import create_engine
 
 
 def load_data(messages_filepath, categories_filepath):
-        """Load disaster messages and categories dataframes,
-    and merge them into one dataframe.
-    
-    Args:
-        messages_filepath (str): path of messages csv file.
-        categories_filepath (str): path of categories csv file.
-        
-    Returns:
-        df (dataframe): combined messages and categories dataframes into one datframe using the common id.   
-  
-    """
-    
-    
-    messages = pd.read_csv(messages_filepath)
-    categories = pd.read_csv(categories_filepath)
-    df = pd.merge(messages, categories, on='id')
+    '''
+    loads the two datasets and merges both by the primary key,
+    i.e. the id variable
+    INPUT:
+    messages_filepath - filepath for disaster_messages.csv
+    categories_filepath - filepath for disaster_categories.csv
+    OUTPUT:
+    df - the merged dataframe
+    .'''
+    df1 = pd.read_csv(messages_filepath)
+    df2 = pd.read_csv(categories_filepath)
+    df = df1.merge(df2, on='id')
     return df
 
 
@@ -54,6 +50,13 @@ def clean_data(df):
 
 
 def save_data(df, database_filename):
+        '''
+    Saves the data into a sqlite db file
+    INPUT:
+    df - the cleaned dataframe
+    database_filename - where to store the database we create
+    '''
+    
     engine = create_engine('sqlite:///'+ database_filename)
     df.to_sql("DisasterResponse", engine, index = False, if_exists='replace')
     
