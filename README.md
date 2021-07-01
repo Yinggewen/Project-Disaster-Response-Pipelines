@@ -48,10 +48,15 @@ Here's the file structure of the project:
 ## Running the Web App from the Project Workspace IDE
 
 When working in the Project Workspace IDE, here is how to see your Flask app.
-1. Open a new terminal window. You should already be in the workspace folder, but if not, then use terminal commands to navigate inside the folder with the run.py file.
-Type in the command line:
-python 
-```
-run.py
-```
-2. Go to http://0.0.0.0:3001/
+### Instructions:
+1. Run the following commands in the project's root directory to set up your database and model.
+
+    - To run ETL pipeline that cleans data and stores in database
+        `python data/process_data.py data/disaster_messages.csv data/disaster_categories.csv data/DisasterResponse.db`
+    - To run ML pipeline that trains classifier and saves
+        `python models/train_classifier.py data/DisasterResponse.db models/classifier.pkl`
+
+2. Run the following command in the app's directory to run your web app.
+    `python run.py`
+
+3. Go to http://0.0.0.0:3001/
