@@ -87,6 +87,29 @@ def index():
                 }
             }
         }
+            
+            
+            # GRAPH 2 - category graph    
+        {
+            'data': [
+                Bar(
+                    x=category_names,
+                    y=category_boolean
+                )
+            ],
+
+            'layout': {
+                'title': 'Distribution of Message Categories',
+                'yaxis': {
+                    'title': "Count"
+                },
+                'xaxis': {
+                    'title': "Category",
+                    'tickangle': 35
+                }
+            }
+          
+        }
     ]
     
     # encode plotly graphs in JSON
